@@ -36,21 +36,21 @@ interface LiveStatusProps {
 }
 
 function getDelayColor(minutes: number | null): string {
-  if (minutes === null) return "text-slate-400";
-  if (minutes === 0) return "text-green-600";
-  if (minutes <= 5) return "text-green-500";
-  if (minutes <= 15) return "text-amber-500";
-  if (minutes <= 30) return "text-orange-500";
-  return "text-red-600";
+  if (minutes === null) return "text-slate-400 dark:text-slate-500";
+  if (minutes === 0) return "text-green-600 dark:text-green-400";
+  if (minutes <= 5) return "text-green-500 dark:text-green-400";
+  if (minutes <= 15) return "text-amber-500 dark:text-amber-400";
+  if (minutes <= 30) return "text-orange-500 dark:text-orange-400";
+  return "text-red-600 dark:text-red-400";
 }
 
 function getDelayBg(minutes: number | null): string {
-  if (minutes === null) return "bg-slate-50";
-  if (minutes === 0) return "bg-green-50";
-  if (minutes <= 5) return "bg-green-50";
-  if (minutes <= 15) return "bg-amber-50";
-  if (minutes <= 30) return "bg-orange-50";
-  return "bg-red-50";
+  if (minutes === null) return "bg-slate-50 dark:bg-slate-800";
+  if (minutes === 0) return "bg-green-50 dark:bg-green-950/30";
+  if (minutes <= 5) return "bg-green-50 dark:bg-green-950/30";
+  if (minutes <= 15) return "bg-amber-50 dark:bg-amber-950/30";
+  if (minutes <= 30) return "bg-orange-50 dark:bg-orange-950/30";
+  return "bg-red-50 dark:bg-red-950/30";
 }
 
 function getStatusIcon(status: LiveStationStatus["status"]): string {
@@ -113,16 +113,16 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
   return (
     <div className="space-y-4">
       {/* Status Header Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="font-bold text-slate-900 text-lg">{trainName}</h2>
-            <p className="text-xs text-slate-500">Train #{trainNo} &middot; Live Running Status</p>
+            <h2 className="font-bold text-slate-900 dark:text-slate-100 text-lg">{trainName}</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Train #{trainNo} &middot; Live Running Status</p>
           </div>
           <button
             onClick={fetchLiveStatus}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-950/60 transition-colors disabled:opacity-50"
           >
             <svg
               className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
@@ -144,11 +144,11 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
         {data && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Current Status */}
-            <div className="bg-slate-50 rounded-xl p-3">
-              <div className="text-[11px] text-slate-400 uppercase tracking-wider mb-1">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
+              <div className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                 Current Status
               </div>
-              <div className="text-sm font-medium text-slate-800">
+              <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
                 {data.currentStatus || "Information not available"}
               </div>
             </div>
@@ -157,26 +157,26 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
             <div
               className={`rounded-xl p-3 ${
                 data.overallDelay === "On Time"
-                  ? "bg-green-50"
+                  ? "bg-green-50 dark:bg-green-950/40"
                   : data.overallDelay.includes("late")
-                  ? "bg-red-50"
+                  ? "bg-red-50 dark:bg-red-950/40"
                   : data.overallDelay.includes("early")
-                  ? "bg-blue-50"
-                  : "bg-slate-50"
+                  ? "bg-blue-50 dark:bg-blue-950/40"
+                  : "bg-slate-50 dark:bg-slate-800"
               }`}
             >
-              <div className="text-[11px] text-slate-400 uppercase tracking-wider mb-1">
+              <div className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                 Delay
               </div>
               <div
                 className={`text-sm font-bold ${
                   data.overallDelay === "On Time"
-                    ? "text-green-700"
+                    ? "text-green-700 dark:text-green-400"
                     : data.overallDelay.includes("late")
-                    ? "text-red-700"
+                    ? "text-red-700 dark:text-red-400"
                     : data.overallDelay.includes("early")
-                    ? "text-blue-700"
-                    : "text-slate-700"
+                    ? "text-blue-700 dark:text-blue-400"
+                    : "text-slate-700 dark:text-slate-300"
                 }`}
               >
                 {data.overallDelay || "—"}
@@ -184,14 +184,14 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
             </div>
 
             {/* Progress */}
-            <div className="bg-slate-50 rounded-xl p-3">
-              <div className="text-[11px] text-slate-400 uppercase tracking-wider mb-1">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
+              <div className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                 Journey Progress
               </div>
-              <div className="text-sm font-medium text-slate-800">
+              <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
                 {departedCount}/{totalCount} stations
               </div>
-              <div className="mt-1.5 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+              <div className="mt-1.5 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-500"
                   style={{
@@ -204,26 +204,26 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
         )}
 
         {data?.lastUpdated && (
-          <p className="text-[11px] text-slate-400 mt-3">{data.lastUpdated}</p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-3">{data.lastUpdated}</p>
         )}
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
           {error}
         </div>
       )}
 
       {/* Loading skeleton */}
       {loading && !data && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 space-y-3">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="flex gap-3 animate-pulse">
-              <div className="w-8 h-8 bg-slate-200 rounded-full" />
+              <div className="w-8 h-8 bg-slate-200 dark:bg-slate-800 rounded-full" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-slate-200 rounded w-1/3" />
-                <div className="h-3 bg-slate-100 rounded w-1/2" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/3" />
+                <div className="h-3 bg-slate-100 dark:bg-slate-800/50 rounded w-1/2" />
               </div>
             </div>
           ))}
@@ -232,8 +232,8 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
 
       {/* Station Timeline */}
       {data && data.stations.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-          <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5">
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
             <svg
               className="w-4 h-4 text-blue-500"
               fill="none"
@@ -266,7 +266,7 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                     {!isFirst && (
                       <div
                         className={`w-0.5 flex-1 ${
-                          isDeparted || isCurrent ? "bg-green-400" : "bg-slate-200"
+                          isDeparted || isCurrent ? "bg-green-400" : "bg-slate-200 dark:bg-slate-700"
                         }`}
                       />
                     )}
@@ -276,12 +276,12 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                     <div
                       className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                         isCurrent
-                          ? "bg-blue-500 ring-4 ring-blue-100"
+                          ? "bg-blue-500 ring-4 ring-blue-100 dark:ring-blue-950"
                           : isDeparted
                           ? "bg-green-500"
                           : isFirst
-                          ? "bg-slate-300"
-                          : "bg-slate-200"
+                          ? "bg-slate-300 dark:bg-slate-600"
+                          : "bg-slate-200 dark:bg-slate-700"
                       }`}
                     >
                       {iconType === "departed" && (
@@ -321,10 +321,10 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                     <div
                       className={`rounded-xl p-3 ${
                         isCurrent
-                          ? "bg-blue-50 border border-blue-200"
+                          ? "bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900"
                           : isDeparted
                           ? getDelayBg(station.delayMinutes)
-                          : "bg-slate-50"
+                          : "bg-slate-50 dark:bg-slate-800"
                       }`}
                     >
                       {/* Station name row */}
@@ -332,13 +332,13 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                         <div className="flex items-center gap-2">
                           <span
                             className={`font-semibold text-sm ${
-                              isCurrent ? "text-blue-800" : "text-slate-800"
+                              isCurrent ? "text-blue-800 dark:text-blue-300" : "text-slate-800 dark:text-slate-100"
                             }`}
                           >
                             {station.stationName}
                           </span>
                           {station.stationCode && (
-                            <span className="text-[10px] font-mono text-slate-400">
+                            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
                               {station.stationCode}
                             </span>
                           )}
@@ -349,7 +349,7 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                           )}
                         </div>
                         {station.platform && (
-                          <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded">
                             PF {station.platform}
                           </span>
                         )}
@@ -358,23 +358,23 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                       {/* Times grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs">
                         <div>
-                          <span className="text-slate-400">Sch Arr: </span>
-                          <span className="text-slate-700 font-medium">
+                          <span className="text-slate-400 dark:text-slate-500">Sch Arr: </span>
+                          <span className="text-slate-700 dark:text-slate-200 font-medium">
                             {station.scheduledArrival || "—"}
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400">Sch Dep: </span>
-                          <span className="text-slate-700 font-medium">
+                          <span className="text-slate-400 dark:text-slate-500">Sch Dep: </span>
+                          <span className="text-slate-700 dark:text-slate-200 font-medium">
                             {station.scheduledDeparture || "—"}
                           </span>
                         </div>
                         {(station.actualArrival || isDeparted || isCurrent) && (
                           <div>
-                            <span className="text-slate-400">Act Arr: </span>
+                            <span className="text-slate-400 dark:text-slate-500">Act Arr: </span>
                             <span
                               className={`font-medium ${
-                                station.actualArrival ? getDelayColor(station.delayMinutes) : "text-slate-400"
+                                station.actualArrival ? getDelayColor(station.delayMinutes) : "text-slate-400 dark:text-slate-500"
                               }`}
                             >
                               {station.actualArrival || "—"}
@@ -383,10 +383,10 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                         )}
                         {(station.actualDeparture || isDeparted) && (
                           <div>
-                            <span className="text-slate-400">Act Dep: </span>
+                            <span className="text-slate-400 dark:text-slate-500">Act Dep: </span>
                             <span
                               className={`font-medium ${
-                                station.actualDeparture ? getDelayColor(station.delayMinutes) : "text-slate-400"
+                                station.actualDeparture ? getDelayColor(station.delayMinutes) : "text-slate-400 dark:text-slate-500"
                               }`}
                             >
                               {station.actualDeparture || "—"}
@@ -404,7 +404,7 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                             {formatDelay(station.delayMinutes)}
                           </span>
                           {station.distance && (
-                            <span className="text-[11px] text-slate-400 ml-2">
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-2">
                               {station.distance}
                             </span>
                           )}
@@ -414,7 +414,7 @@ export default function LiveStatus({ trainNo, trainName }: LiveStatusProps) {
                       {/* Upcoming station - just show distance */}
                       {station.status === "upcoming" && station.distance && (
                         <div className="mt-1">
-                          <span className="text-[11px] text-slate-400">{station.distance}</span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">{station.distance}</span>
                         </div>
                       )}
                     </div>

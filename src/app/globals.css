@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+.dark {
+  --background: #0a0f1a;
+  --foreground: #e2e8f0;
 }
 
 @theme inline {
@@ -22,6 +29,31 @@ body {
 .custom-marker {
   background: transparent !important;
   border: none !important;
+}
+
+/* Dark mode map tiles */
+.dark .leaflet-tile {
+  filter: brightness(0.7) invert(1) contrast(1.1) hue-rotate(200deg) saturate(0.4) brightness(0.9);
+}
+
+.dark .leaflet-container {
+  background: #0f172a;
+}
+
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .leaflet-popup-content-wrapper > div > div {
+  color: #e2e8f0 !important;
+}
+
+.dark .leaflet-control-zoom a {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
 }
 
 /* Pulse animation for highlighted station on map */
@@ -57,4 +89,11 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }

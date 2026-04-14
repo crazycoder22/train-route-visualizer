@@ -14,8 +14,26 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Train Route Visualizer - Indian Railways",
-  description: "Visualize Indian train routes on an interactive map. See which states a train passes through.",
+  description:
+    "Visualize Indian train routes on an interactive map. See which states a train passes through.",
 };
+
+// Set initial theme before React hydrates to prevent flash
+const themeScript = `
+(function() {
+  try {
+    var stored = localStorage.getItem('theme');
+    var theme = stored || 'dark';
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  } catch (e) {
+    document.documentElement.classList.add('dark');
+  }
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -26,7 +44,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

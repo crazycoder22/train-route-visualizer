@@ -5,13 +5,14 @@ import dynamic from "next/dynamic";
 import type { TrainMapHandle } from "@/components/TrainMap";
 import LiveStatus from "@/components/LiveStatus";
 import PnrStatus from "@/components/PnrStatus";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // Dynamically import map to avoid SSR issues with Leaflet
 const TrainMap = dynamic(() => import("@/components/TrainMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-slate-100 rounded-xl">
-      <div className="text-slate-400">Loading map...</div>
+    <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl">
+      <div className="text-slate-400 dark:text-slate-500">Loading map...</div>
     </div>
   ),
 });
@@ -135,34 +136,37 @@ export default function Home() {
     trainData?.stations[trainData.stations.length - 1]?.distance || "";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="text-2xl">🚂</div>
             <div>
-              <h1 className="text-lg font-bold text-slate-900 leading-tight">
+              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">
                 Train Route Visualizer
               </h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Visualize Indian train routes on a map
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setActiveTab(activeTab === "pnr" ? "route" : "pnr")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "pnr"
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-            </svg>
-            PNR Status
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab(activeTab === "pnr" ? "route" : "pnr")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "pnr"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+              </svg>
+              PNR Status
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -182,7 +186,7 @@ export default function Home() {
         {activeTab !== "pnr" && (
         <>
         {/* Search Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-6">
           <form onSubmit={handleSubmit} className="flex gap-3">
             <input
               ref={inputRef}
@@ -190,12 +194,12 @@ export default function Home() {
               value={trainNo}
               onChange={(e) => setTrainNo(e.target.value)}
               placeholder="Enter train number (e.g., 12301) or number-name (e.g., 03252-SMVB-DNR-SPL)"
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none text-slate-800 placeholder:text-slate-400 transition-all"
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all"
             />
             <button
               type="submit"
               disabled={loading || !trainNo.trim()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -228,12 +232,12 @@ export default function Home() {
 
           {/* Sample trains */}
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="text-xs text-slate-400 py-1">Try:</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 py-1">Try:</span>
             {SAMPLE_TRAINS.map((t) => (
               <button
                 key={t.no}
                 onClick={() => handleSampleClick(t.no)}
-                className="text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                className="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
               >
                 {t.no} {t.name}
               </button>
@@ -243,20 +247,20 @@ export default function Home() {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-red-700 text-sm">
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl p-4 mb-6 text-red-700 dark:text-red-300 text-sm">
             {error}
           </div>
         )}
 
         {/* Tabs */}
         {trainData && (
-          <div className="flex gap-1 mb-6 bg-white rounded-xl shadow-sm border border-slate-200 p-1 w-fit">
+          <div className="flex gap-1 mb-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-1 w-fit">
             <button
               onClick={() => setActiveTab("route")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === "route"
                   ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100"
+                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,7 +273,7 @@ export default function Home() {
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === "live"
                   ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100"
+                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,29 +290,29 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Map - takes 2/3 on desktop */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                 {/* Train info bar */}
-                <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <div>
-                    <h2 className="font-bold text-slate-900">
+                    <h2 className="font-bold text-slate-900 dark:text-slate-100">
                       {trainData.trainName}
                     </h2>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Train #{trainData.trainNo} &middot; {totalStations} stops
                       &middot; {totalDistance}
                       {mappedStations < totalStations && (
-                        <span className="text-amber-600 ml-1">
+                        <span className="text-amber-600 dark:text-amber-400 ml-1">
                           ({mappedStations}/{totalStations} mapped)
                         </span>
                       )}
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <span className="flex items-center gap-1 text-xs text-slate-500">
+                    <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                       <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
                       Start
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-slate-500">
+                    <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                       <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
                       End
                     </span>
@@ -327,8 +331,8 @@ export default function Home() {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* States Summary */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
                   <svg
                     className="w-4 h-4 text-blue-500"
                     fill="none"
@@ -352,7 +356,7 @@ export default function Home() {
                     return (
                       <div
                         key={state}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors"
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                       >
                         <div className="flex items-center gap-2 flex-1">
                           <span
@@ -362,11 +366,11 @@ export default function Home() {
                                 STATE_COLORS[state] || "#95a5a6",
                             }}
                           />
-                          <span className="text-sm font-medium text-slate-700">
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                             {idx + 1}. {state}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
                           {stationsInState.length} stop
                           {stationsInState.length > 1 ? "s" : ""}
                         </span>
@@ -376,8 +380,8 @@ export default function Home() {
                 </div>
 
                 {/* Journey summary */}
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                     This train travels through{" "}
                     <strong>{trainData.states.length} states</strong> covering{" "}
                     <strong>{totalDistance}</strong> with{" "}
@@ -393,8 +397,8 @@ export default function Home() {
               </div>
 
               {/* Station List */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <h3 className="font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
                   <svg
                     className="w-4 h-4 text-blue-500"
                     fill="none"
@@ -410,7 +414,7 @@ export default function Home() {
                   </svg>
                   All Stops
                 </h3>
-                <p className="text-[11px] text-slate-400 mb-3">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">
                   Click a stop to highlight it on the map
                 </p>
                 <div className="max-h-[400px] overflow-y-auto space-y-1 pr-1">
@@ -459,17 +463,17 @@ export default function Home() {
                           disabled={!hasCoords}
                           className={`w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg text-sm transition-all ${
                             isActive
-                              ? "bg-blue-50 ring-1 ring-blue-200"
+                              ? "bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-200 dark:ring-blue-800"
                               : isFirst || isLast
-                              ? "bg-slate-50 font-medium"
-                              : "hover:bg-slate-50"
+                              ? "bg-slate-50 dark:bg-slate-800/50 font-medium"
+                              : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           } ${hasCoords ? "cursor-pointer" : "cursor-default opacity-60"}`}
                         >
                           {/* Timeline dot */}
                           <div className="relative flex flex-col items-center">
                             <div
                               className={`w-2.5 h-2.5 rounded-full transition-transform ${
-                                isActive ? "scale-150 ring-2 ring-blue-300" : ""
+                                isActive ? "scale-150 ring-2 ring-blue-300 dark:ring-blue-700" : ""
                               } ${
                                 isFirst
                                   ? "bg-green-500"
@@ -477,7 +481,7 @@ export default function Home() {
                                   ? "bg-red-500"
                                   : isActive
                                   ? "bg-blue-500"
-                                  : "bg-slate-300"
+                                  : "bg-slate-300 dark:bg-slate-600"
                               }`}
                             />
                           </div>
@@ -486,17 +490,17 @@ export default function Home() {
                               <span
                                 className={`truncate ${
                                   isActive
-                                    ? "text-blue-700 font-medium"
-                                    : "text-slate-800"
+                                    ? "text-blue-700 dark:text-blue-300 font-medium"
+                                    : "text-slate-800 dark:text-slate-200"
                                 }`}
                               >
                                 {station.stationName}
                               </span>
-                              <span className="text-[10px] text-slate-400 font-mono">
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                                 {station.stationCode}
                               </span>
                             </div>
-                            <div className="text-[11px] text-slate-400">
+                            <div className="text-[11px] text-slate-400 dark:text-slate-500">
                               {station.arrival && `Arr: ${station.arrival}`}
                               {station.arrival && station.departure && " · "}
                               {station.departure &&
@@ -507,7 +511,7 @@ export default function Home() {
                           {hasCoords ? (
                             <svg
                               className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${
-                                isActive ? "text-blue-400" : "text-slate-300"
+                                isActive ? "text-blue-400" : "text-slate-300 dark:text-slate-600"
                               }`}
                               fill="none"
                               stroke="currentColor"
@@ -558,10 +562,10 @@ export default function Home() {
         {!trainData && !loading && !error && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🗺️</div>
-            <h2 className="text-xl font-semibold text-slate-700 mb-2">
+            <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200 mb-2">
               Visualize Any Indian Train Route
             </h2>
-            <p className="text-slate-500 max-w-md mx-auto">
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Enter a train number above to see its route plotted on a map.
               You&apos;ll see every stop, the states it passes through, and the
               complete journey at a glance.
