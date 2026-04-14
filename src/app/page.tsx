@@ -68,6 +68,29 @@ const STATE_COLORS: Record<string, string> = {
   Tripura: "#adb5bd",
 };
 
+// Parse distance string like "484.00 km" to number
+function parseDistance(str: string): number {
+  const match = str.match(/(\d+\.?\d*)/);
+  return match ? parseFloat(match[1]) : 0;
+}
+
+// Parse time string "HH:MM" to minutes since midnight
+function parseTime(str: string): number | null {
+  const match = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  return parseInt(match[1]) * 60 + parseInt(match[2]);
+}
+
+// Format minutes as "Xh Ym"
+function formatDuration(minutes: number): string {
+  if (minutes < 0) return "—";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
 const SAMPLE_TRAINS = [
   { no: "12301", name: "Howrah Rajdhani" },
   { no: "12951", name: "Mumbai Rajdhani" },
@@ -84,6 +107,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [activeStation, setActiveStation] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("route");
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareFrom, setCompareFrom] = useState<number | null>(null);
+  const [compareTo, setCompareTo] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<TrainMapHandle>(null);
 
@@ -96,6 +122,9 @@ export default function Home() {
     setTrainData(null);
     setActiveStation(null);
     setActiveTab("route");
+    setCompareMode(false);
+    setCompareFrom(null);
+    setCompareTo(null);
 
     try {
       const res = await fetch(`/api/train/${encodeURIComponent(cleaned)}`);
@@ -124,9 +153,34 @@ export default function Home() {
   };
 
   const handleStationClick = (station: Station, idx: number) => {
+    if (compareMode) {
+      // In compare mode, select as from/to
+      if (compareFrom === null) {
+        setCompareFrom(idx);
+      } else if (compareTo === null && idx !== compareFrom) {
+        setCompareTo(idx);
+      } else {
+        // Reset and pick new from
+        setCompareFrom(idx);
+        setCompareTo(null);
+      }
+      return;
+    }
     if (!station.lat || !station.lng) return;
     setActiveStation(idx);
     mapRef.current?.flyToStation(station.stationCode, idx);
+  };
+
+  const toggleCompareMode = () => {
+    setCompareMode((prev) => !prev);
+    setCompareFrom(null);
+    setCompareTo(null);
+    setActiveStation(null);
+  };
+
+  const clearCompare = () => {
+    setCompareFrom(null);
+    setCompareTo(null);
   };
 
   const mappedStations =
@@ -134,6 +188,60 @@ export default function Home() {
   const totalStations = trainData?.stations.length || 0;
   const totalDistance =
     trainData?.stations[trainData.stations.length - 1]?.distance || "";
+
+  // Compute comparison data when both from and to are selected
+  const comparison = (() => {
+    if (!trainData || compareFrom === null || compareTo === null) return null;
+    // Ensure from is before to (earlier in journey)
+    const fromIdx = Math.min(compareFrom, compareTo);
+    const toIdx = Math.max(compareFrom, compareTo);
+    const from = trainData.stations[fromIdx];
+    const to = trainData.stations[toIdx];
+    if (!from || !to) return null;
+
+    const fromDist = parseDistance(from.distance);
+    const toDist = parseDistance(to.distance);
+    const distance = toDist - fromDist;
+
+    // Travel time: from departure -> to arrival.
+    // The day field from the source can be unreliable, so we don't rely on it.
+    // Instead we unwrap the clock time difference and use distance as a sanity
+    // check: pick the day offset that keeps the implied speed in a sane range
+    // (30–120 km/h for Indian trains, with 80 km/h as the ideal).
+    const fromDepMins = parseTime(from.departure);
+    const toArrMins = parseTime(to.arrival);
+    let travelMinutes: number | null = null;
+    if (fromDepMins !== null && toArrMins !== null) {
+      let base = toArrMins - fromDepMins;
+      if (base < 0) base += 24 * 60; // wrap to next day
+      // Try adding 0, 1, 2, ... day offsets and pick whichever gives speed closest to 80 km/h
+      let bestOffset = 0;
+      let bestScore = Infinity;
+      const maxDays = 7;
+      for (let d = 0; d <= maxDays; d++) {
+        const candidate = base + d * 24 * 60;
+        if (candidate === 0) continue;
+        const speed = (distance / candidate) * 60; // km/h
+        // Penalize speeds outside 30-120 km/h range
+        const score = Math.abs(Math.log(speed / 80));
+        if (score < bestScore) {
+          bestScore = score;
+          bestOffset = d;
+        }
+      }
+      travelMinutes = base + bestOffset * 24 * 60;
+    }
+
+    return {
+      from,
+      to,
+      fromIdx,
+      toIdx,
+      distance,
+      travelMinutes,
+      stopCount: toIdx - fromIdx,
+    };
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -398,25 +506,102 @@ export default function Home() {
 
               {/* Station List */}
               <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5">
-                <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-blue-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                      />
+                    </svg>
+                    All Stops
+                  </h3>
+                  <button
+                    onClick={toggleCompareMode}
+                    className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-md font-medium transition-colors ${
+                      compareMode
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                    />
-                  </svg>
-                  All Stops
-                </h3>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Compare
+                  </button>
+                </div>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">
-                  Click a stop to highlight it on the map
+                  {compareMode
+                    ? compareFrom === null
+                      ? "Click a stop to select From"
+                      : compareTo === null
+                      ? "Click another stop to select To"
+                      : "Click any stop to start a new comparison"
+                    : "Click a stop to highlight it on the map"}
                 </p>
+
+                {/* Comparison Result Card */}
+                {compareMode && comparison && (
+                  <div className="mb-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-blue-700 dark:text-blue-400">
+                        Comparison
+                      </span>
+                      <button
+                        onClick={clearCompare}
+                        className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs mb-2">
+                      <span className="font-semibold text-slate-800 dark:text-slate-100 truncate flex-1">
+                        {comparison.from.stationName}
+                      </span>
+                      <svg className="w-3 h-3 text-slate-400 dark:text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                      <span className="font-semibold text-slate-800 dark:text-slate-100 truncate flex-1 text-right">
+                        {comparison.to.stationName}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-2">
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">Distance</div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                          {comparison.distance > 0 ? `${comparison.distance.toFixed(0)} km` : "—"}
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-2">
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">Travel Time</div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                          {comparison.travelMinutes !== null ? formatDuration(comparison.travelMinutes) : "—"}
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-2">
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">Stops</div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                          {comparison.stopCount}
+                        </div>
+                      </div>
+                    </div>
+                    {comparison.travelMinutes !== null && comparison.distance > 0 && (
+                      <div className="mt-2 text-[10px] text-center text-slate-500 dark:text-slate-400">
+                        Avg speed:{" "}
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {((comparison.distance / comparison.travelMinutes) * 60).toFixed(0)} km/h
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="max-h-[400px] overflow-y-auto space-y-1 pr-1">
                   {trainData.stations.map((station, idx) => {
                     const isFirst = idx === 0;
@@ -427,6 +612,13 @@ export default function Home() {
                       prevStation && prevStation.state !== station.state;
                     const isActive = activeStation === idx;
                     const hasCoords = station.lat !== null && station.lng !== null;
+                    const isCompareFrom = compareFrom === idx;
+                    const isCompareTo = compareTo === idx;
+                    const isInRange =
+                      compareFrom !== null &&
+                      compareTo !== null &&
+                      idx > Math.min(compareFrom, compareTo) &&
+                      idx < Math.max(compareFrom, compareTo);
 
                     return (
                       <div key={`${station.stationCode}-${idx}`}>
@@ -460,14 +652,18 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={() => handleStationClick(station, idx)}
-                          disabled={!hasCoords}
+                          disabled={!compareMode && !hasCoords}
                           className={`w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg text-sm transition-all ${
-                            isActive
+                            isCompareFrom || isCompareTo
+                              ? "bg-blue-100 dark:bg-blue-900/60 ring-2 ring-blue-500 dark:ring-blue-600 font-semibold"
+                              : isInRange
+                              ? "bg-blue-50/50 dark:bg-blue-950/20"
+                              : isActive
                               ? "bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-200 dark:ring-blue-800"
                               : isFirst || isLast
                               ? "bg-slate-50 dark:bg-slate-800/50 font-medium"
                               : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                          } ${hasCoords ? "cursor-pointer" : "cursor-default opacity-60"}`}
+                          } ${compareMode || hasCoords ? "cursor-pointer" : "cursor-default opacity-60"}`}
                         >
                           {/* Timeline dot */}
                           <div className="relative flex flex-col items-center">
@@ -489,7 +685,9 @@ export default function Home() {
                             <div className="flex items-center gap-1.5">
                               <span
                                 className={`truncate ${
-                                  isActive
+                                  isCompareFrom || isCompareTo
+                                    ? "text-blue-800 dark:text-blue-200 font-semibold"
+                                    : isActive
                                     ? "text-blue-700 dark:text-blue-300 font-medium"
                                     : "text-slate-800 dark:text-slate-200"
                                 }`}
@@ -499,6 +697,16 @@ export default function Home() {
                               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                                 {station.stationCode}
                               </span>
+                              {isCompareFrom && (
+                                <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold">
+                                  FROM
+                                </span>
+                              )}
+                              {isCompareTo && (
+                                <span className="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold">
+                                  TO
+                                </span>
+                              )}
                             </div>
                             <div className="text-[11px] text-slate-400 dark:text-slate-500">
                               {station.arrival && `Arr: ${station.arrival}`}
