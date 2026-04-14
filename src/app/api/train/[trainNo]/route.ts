@@ -149,7 +149,8 @@ export async function GET(
             const jsonMatch = scriptContent.match(/(?:stationSchedule|trainSchedule)\s*=\s*(\[[\s\S]*?\]);/);
             if (jsonMatch) {
               const data = JSON.parse(jsonMatch[1]);
-              data.forEach((item: Record<string, string>, idx: number) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data.forEach((item: any, idx: number) => {
                 const code = item.stationCode || item.code || "";
                 const stationInfo = code ? stationCoordinates[code] : null;
                 if (stationInfo) statesSet.add(stationInfo.state);
@@ -182,7 +183,8 @@ export async function GET(
           const data = JSON.parse($(el).html() || "");
           if (data.hasPart || data.subTrip) {
             const trips = data.hasPart || data.subTrip || [];
-            trips.forEach((trip: Record<string, Record<string, string>>, idx: number) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            trips.forEach((trip: any, idx: number) => {
               const depStation = trip.departureStation || trip.fromLocation;
               const code = depStation?.identifier || "";
               const name = depStation?.name || "";
