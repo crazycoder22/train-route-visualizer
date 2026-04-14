@@ -183,9 +183,10 @@ const TrainMap = forwardRef<TrainMapHandle, TrainMapProps>(
         const key = `${station.stationCode}-${originalIndex}`;
         markersRef.current.set(key, marker);
 
-        // Popup content
+        // Popup content with weather placeholder
+        const weatherId = `weather-${station.stationCode}-${idx}`;
         const popupContent = `
-          <div style="font-family: system-ui; min-width: 180px;">
+          <div style="font-family: system-ui; min-width: 200px;">
             <div style="font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 4px;">
               ${station.stationName}
             </div>
@@ -198,12 +199,48 @@ const TrainMap = forwardRef<TrainMapHandle, TrainMapProps>(
               <div><span style="color: #94a3b8;">Day:</span> <strong>${station.day}</strong></div>
               <div><span style="color: #94a3b8;">Dist:</span> <strong>${station.distance || "—"}</strong></div>
             </div>
-            <div style="margin-top: 6px; font-size: 11px; color: #94a3b8;">
+            <div id="${weatherId}" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+              Loading weather...
+            </div>
+            <div style="margin-top: 4px; font-size: 11px; color: #94a3b8;">
               Stop #${station.serialNo}
             </div>
           </div>
         `;
         marker.bindPopup(popupContent);
+
+        // Fetch weather when popup opens
+        marker.on("popupopen", () => {
+          const el = document.getElementById(weatherId);
+          if (!el || el.dataset.loaded === "true") return;
+          el.dataset.loaded = "true";
+
+          fetch(`/api/weather?lat=${station.lat}&lng=${station.lng}`)
+            .then((r) => r.json())
+            .then((w) => {
+              if (w.error) {
+                el.textContent = "Weather unavailable";
+                return;
+              }
+              el.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 20px; line-height: 1;">${w.icon}</span>
+                  <div>
+                    <div style="font-weight: 600; color: #1e293b; font-size: 13px;">
+                      ${w.temperature}°C
+                      <span style="font-weight: 400; color: #64748b; font-size: 11px;">feels ${w.feelsLike}°C</span>
+                    </div>
+                    <div style="color: #64748b; font-size: 11px;">
+                      ${w.description} &middot; 💧${w.humidity}% &middot; 💨${w.windSpeed} km/h
+                    </div>
+                  </div>
+                </div>
+              `;
+            })
+            .catch(() => {
+              el.textContent = "Weather unavailable";
+            });
+        });
       });
 
       // Draw route line with gradient effect using polyline segments
