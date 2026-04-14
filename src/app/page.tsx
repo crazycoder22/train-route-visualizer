@@ -6,6 +6,7 @@ import type { TrainMapHandle } from "@/components/TrainMap";
 import LiveStatus from "@/components/LiveStatus";
 import PnrStatus from "@/components/PnrStatus";
 import ThemeToggle from "@/components/ThemeToggle";
+import ExportButton from "@/components/ExportButton";
 
 // Dynamically import map to avoid SSR issues with Leaflet
 const TrainMap = dynamic(() => import("@/components/TrainMap"), {
@@ -112,6 +113,7 @@ export default function Home() {
   const [compareTo, setCompareTo] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const mapRef = useRef<TrainMapHandle>(null);
+  const routeContentRef = useRef<HTMLDivElement>(null);
 
   const fetchTrain = useCallback(async (number: string) => {
     const cleaned = number.trim().replace(/\s+/g, "-");
@@ -395,14 +397,14 @@ export default function Home() {
 
         {/* Route Map Tab */}
         {trainData && activeTab === "route" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div ref={routeContentRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Map - takes 2/3 on desktop */}
             <div className="lg:col-span-2">
               <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                 {/* Train info bar */}
-                <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-bold text-slate-900 dark:text-slate-100">
+                <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="font-bold text-slate-900 dark:text-slate-100 truncate">
                       {trainData.trainName}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -415,15 +417,21 @@ export default function Home() {
                       )}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
-                      Start
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
-                      End
-                    </span>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="hidden sm:flex gap-2">
+                      <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
+                        Start
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+                        End
+                      </span>
+                    </div>
+                    <ExportButton
+                      targetRef={routeContentRef}
+                      filename={`train-${trainData.trainNo}-route`}
+                    />
                   </div>
                 </div>
                 <div className="h-[500px] lg:h-[600px]">
