@@ -1,0 +1,257 @@
+"use client";
+
+import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+interface Station {
+  serialNo: number;
+  stationName: string;
+  stationCode: string;
+  arrival: string;
+  departure: string;
+  day: number;
+  distance: string;
+  lat: number | null;
+  lng: number | null;
+  state: string | null;
+}
+
+interface TrainMapProps {
+  stations: Station[];
+  trainName: string;
+}
+
+export interface TrainMapHandle {
+  flyToStation: (stationCode: string, index: number) => void;
+}
+
+// Color palette for states
+const STATE_COLORS: Record<string, string> = {
+  Karnataka: "#e74c3c",
+  "Tamil Nadu": "#3498db",
+  "Andhra Pradesh": "#2ecc71",
+  Telangana: "#f39c12",
+  Maharashtra: "#9b59b6",
+  "Madhya Pradesh": "#1abc9c",
+  "Uttar Pradesh": "#e67e22",
+  Bihar: "#2980b9",
+  "West Bengal": "#d35400",
+  Jharkhand: "#27ae60",
+  Odisha: "#8e44ad",
+  Rajasthan: "#c0392b",
+  Gujarat: "#16a085",
+  Punjab: "#f1c40f",
+  Haryana: "#7f8c8d",
+  Kerala: "#2c3e50",
+  Goa: "#d63384",
+  Chhattisgarh: "#fd7e14",
+  Delhi: "#6610f2",
+  Assam: "#20c997",
+  Uttarakhand: "#0dcaf0",
+  "Jammu & Kashmir": "#6f42c1",
+  "Himachal Pradesh": "#198754",
+  Puducherry: "#dc3545",
+  Tripura: "#adb5bd",
+};
+
+function getStateColor(state: string | null): string {
+  if (!state) return "#95a5a6";
+  return STATE_COLORS[state] || "#95a5a6";
+}
+
+const TrainMap = forwardRef<TrainMapHandle, TrainMapProps>(
+  function TrainMap({ stations, trainName }, ref) {
+    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<L.Map | null>(null);
+    const markersRef = useRef<Map<string, L.Marker>>(new Map());
+    const highlightCircleRef = useRef<L.CircleMarker | null>(null);
+
+    useImperativeHandle(ref, () => ({
+      flyToStation(stationCode: string, index: number) {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        // Try by "code-index" key first, then just code
+        const key = `${stationCode}-${index}`;
+        const marker = markersRef.current.get(key);
+        if (!marker) return;
+
+        const latLng = marker.getLatLng();
+
+        // Remove previous highlight
+        if (highlightCircleRef.current) {
+          highlightCircleRef.current.remove();
+          highlightCircleRef.current = null;
+        }
+
+        // Fly to the station
+        map.flyTo(latLng, 10, { duration: 0.8 });
+
+        // Add a pulsing highlight circle
+        const highlight = L.circleMarker(latLng, {
+          radius: 20,
+          color: "#3b82f6",
+          fillColor: "#3b82f6",
+          fillOpacity: 0.15,
+          weight: 2,
+          opacity: 0.8,
+          className: "pulse-marker",
+        }).addTo(map);
+        highlightCircleRef.current = highlight;
+
+        // Open the popup after flying
+        setTimeout(() => {
+          marker.openPopup();
+        }, 850);
+
+        // Remove highlight after a few seconds
+        setTimeout(() => {
+          if (highlightCircleRef.current === highlight) {
+            highlight.remove();
+            highlightCircleRef.current = null;
+          }
+        }, 4000);
+      },
+    }));
+
+    useEffect(() => {
+      if (!mapRef.current) return;
+
+      // Clean up previous map
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+      markersRef.current.clear();
+
+      const stationsWithCoords = stations.filter(
+        (s) => s.lat !== null && s.lng !== null
+      );
+
+      if (stationsWithCoords.length === 0) return;
+
+      // Create map
+      const map = L.map(mapRef.current, {
+        zoomControl: true,
+        scrollWheelZoom: true,
+      });
+      mapInstanceRef.current = map;
+
+      // Add tile layer (OpenStreetMap)
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 18,
+      }).addTo(map);
+
+      // Build route line coordinates and add markers
+      const routeCoords: L.LatLngExpression[] = [];
+
+      stationsWithCoords.forEach((station, idx) => {
+        const latLng: L.LatLngExpression = [station.lat!, station.lng!];
+        routeCoords.push(latLng);
+
+        const isFirst = idx === 0;
+        const isLast = idx === stationsWithCoords.length - 1;
+        const color = getStateColor(station.state);
+
+        // Create custom icon
+        const size = isFirst || isLast ? 14 : 9;
+        const borderColor = isFirst ? "#22c55e" : isLast ? "#ef4444" : color;
+        const fillColor = isFirst ? "#22c55e" : isLast ? "#ef4444" : "#ffffff";
+
+        const icon = L.divIcon({
+          className: "custom-marker",
+          html: `<div style="
+            width: ${size}px;
+            height: ${size}px;
+            background: ${fillColor};
+            border: 2.5px solid ${borderColor};
+            border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+          "></div>`,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+
+        const marker = L.marker(latLng, { icon }).addTo(map);
+
+        // Store marker reference with unique key
+        const originalIndex = stations.findIndex(
+          (s) => s.stationCode === station.stationCode && s.lat === station.lat
+        );
+        const key = `${station.stationCode}-${originalIndex}`;
+        markersRef.current.set(key, marker);
+
+        // Popup content
+        const popupContent = `
+          <div style="font-family: system-ui; min-width: 180px;">
+            <div style="font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 4px;">
+              ${station.stationName}
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 6px;">
+              ${station.stationCode} &middot; ${station.state || "Unknown"}
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px;">
+              <div><span style="color: #94a3b8;">Arr:</span> <strong>${station.arrival || "—"}</strong></div>
+              <div><span style="color: #94a3b8;">Dep:</span> <strong>${station.departure || "—"}</strong></div>
+              <div><span style="color: #94a3b8;">Day:</span> <strong>${station.day}</strong></div>
+              <div><span style="color: #94a3b8;">Dist:</span> <strong>${station.distance || "—"}</strong></div>
+            </div>
+            <div style="margin-top: 6px; font-size: 11px; color: #94a3b8;">
+              Stop #${station.serialNo}
+            </div>
+          </div>
+        `;
+        marker.bindPopup(popupContent);
+      });
+
+      // Draw route line with gradient effect using polyline segments
+      for (let i = 0; i < routeCoords.length - 1; i++) {
+        const fromStation = stationsWithCoords[i];
+        const toStation = stationsWithCoords[i + 1];
+        const segment = [routeCoords[i], routeCoords[i + 1]];
+
+        // Use the "from" station's state color
+        const color = getStateColor(fromStation.state);
+
+        // Draw a slightly thicker background line
+        L.polyline(segment, {
+          color: "#1e293b",
+          weight: 5,
+          opacity: 0.2,
+        }).addTo(map);
+
+        // Draw the colored line
+        L.polyline(segment, {
+          color,
+          weight: 3,
+          opacity: 0.85,
+          dashArray: fromStation.state !== toStation.state ? "8, 6" : undefined,
+        }).addTo(map);
+      }
+
+      // Fit bounds with padding
+      const bounds = L.latLngBounds(routeCoords);
+      map.fitBounds(bounds, { padding: [40, 40] });
+
+      return () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+        markersRef.current.clear();
+      };
+    }, [stations, trainName]);
+
+    return (
+      <div
+        ref={mapRef}
+        className="w-full h-full rounded-xl overflow-hidden"
+        style={{ minHeight: "400px" }}
+      />
+    );
+  }
+);
+
+export default TrainMap;
