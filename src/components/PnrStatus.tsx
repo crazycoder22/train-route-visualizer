@@ -58,6 +58,10 @@ function getStatusBg(status: string, confirmed: boolean): string {
   return "bg-slate-50 border-slate-200";
 }
 
+interface PnrStatusProps {
+  onViewTrain?: (trainNo: string, tab: "route" | "live") => void;
+}
+
 function getStatusLabel(confirmed: boolean, status: string): { text: string; color: string } {
   if (confirmed) return { text: "CONFIRMED", color: "bg-green-500" };
   const upper = status.toUpperCase();
@@ -68,7 +72,7 @@ function getStatusLabel(confirmed: boolean, status: string): { text: string; col
   return { text: "PENDING", color: "bg-slate-400" };
 }
 
-export default function PnrStatus() {
+export default function PnrStatus({ onViewTrain }: PnrStatusProps) {
   const [pnrNo, setPnrNo] = useState("");
   const [data, setData] = useState<PnrData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -250,17 +254,43 @@ export default function PnrStatus() {
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Train */}
-              <div className="bg-slate-50 rounded-xl p-3">
-                <div className="text-[11px] text-slate-400 uppercase tracking-wider">Train</div>
-                <div className="text-sm font-semibold text-slate-800">
-                  {data.trainName}
+              {/* Train + Actions */}
+              <div className="bg-slate-50 rounded-xl p-3 sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] text-slate-400 uppercase tracking-wider">Train</div>
+                    <div className="text-sm font-semibold text-slate-800">
+                      {data.trainName}
+                    </div>
+                    <div className="text-xs text-slate-500">#{data.trainNo}</div>
+                  </div>
+                  {onViewTrain && data.trainNo && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onViewTrain(data.trainNo, "route")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                        View Route
+                      </button>
+                      <button
+                        onClick={() => onViewTrain(data.trainNo, "live")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Live Status
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="text-xs text-slate-500">#{data.trainNo}</div>
               </div>
 
               {/* Date */}
-              <div className="bg-slate-50 rounded-xl p-3">
+              <div className="bg-slate-50 rounded-xl p-3 sm:col-span-2">
                 <div className="text-[11px] text-slate-400 uppercase tracking-wider">Date of Journey</div>
                 <div className="text-sm font-semibold text-slate-800">{data.doj || "—"}</div>
                 {data.bookingDate && (

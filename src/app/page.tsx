@@ -169,7 +169,13 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* PNR Status Mode */}
         {activeTab === "pnr" && (
-          <PnrStatus />
+          <PnrStatus
+            onViewTrain={(trainNoFromPnr, tab) => {
+              setTrainNo(trainNoFromPnr);
+              setActiveTab(tab);
+              fetchTrain(trainNoFromPnr);
+            }}
+          />
         )}
 
         {/* Train Route Mode */}
