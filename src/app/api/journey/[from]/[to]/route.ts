@@ -4,6 +4,7 @@ import {
   parseTimeToMinutes,
   parseDurationToMinutes,
   TBSTrain,
+  TBSClassInfo,
 } from "@/lib/tbs";
 import { stationCoordinates } from "@/data/stations";
 
@@ -42,6 +43,13 @@ export interface JourneyLeg {
   distance: string;
   trainType: string;
   daysOfRun: TBSTrain["daysOfRun"];
+  classes: TBSClassInfo[];
+}
+
+export interface ConnectingFareSummary {
+  classCode: string;
+  label: string;
+  total: number;
 }
 
 export interface ConnectingJourney {
@@ -51,6 +59,8 @@ export interface ConnectingJourney {
   layoverMinutes: number;
   totalMinutes: number;
   totalHours: string; // e.g. "9h 30m"
+  // Combined fare per class that exists on BOTH legs (sum)
+  combinedFares: ConnectingFareSummary[];
 }
 
 export interface JourneyResponse {
@@ -80,7 +90,33 @@ function toJourneyLeg(t: TBSTrain): JourneyLeg {
     distance: t.distance,
     trainType: t.trainType,
     daysOfRun: t.daysOfRun,
+    classes: t.classes,
   };
+}
+
+function computeCombinedFares(
+  leg1: JourneyLeg,
+  leg2: JourneyLeg
+): ConnectingFareSummary[] {
+  const leg1ByCode = new Map(leg1.classes.map((c) => [c.code, c]));
+  const summary: ConnectingFareSummary[] = [];
+  for (const c2 of leg2.classes) {
+    const c1 = leg1ByCode.get(c2.code);
+    if (!c1) continue;
+    if (c1.estimatedFare > 0 && c2.estimatedFare > 0) {
+      summary.push({
+        classCode: c2.code,
+        label: c2.label,
+        total: c1.estimatedFare + c2.estimatedFare,
+      });
+    }
+  }
+  // Sort by a standard class order
+  const order = ["1A", "2A", "3A", "3E", "CC", "EC", "SL", "2S", "FC"];
+  summary.sort(
+    (a, b) => order.indexOf(a.classCode) - order.indexOf(b.classCode)
+  );
+  return summary;
 }
 
 function formatHours(minutes: number): string {
@@ -182,13 +218,16 @@ export async function GET(
         // Reject journeys longer than 4 days — likely a bad match
         if (totalMinutes > 4 * 24 * 60) continue;
 
+        const l1 = toJourneyLeg(t1);
+        const l2 = toJourneyLeg(t2);
         connectingJourneys.push({
           via: hub,
           viaName: stationCoordinates[hub]?.name || hub,
-          legs: [toJourneyLeg(t1), toJourneyLeg(t2)],
+          legs: [l1, l2],
           layoverMinutes: layover,
           totalMinutes,
           totalHours: formatHours(totalMinutes),
+          combinedFares: computeCombinedFares(l1, l2),
         });
       }
     }

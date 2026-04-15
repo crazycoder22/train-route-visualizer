@@ -14,6 +14,8 @@ interface TBSClassInfo {
   seniorQuota: number;
   disabledQuota: number;
   duressQuota: number;
+  estimatedFare: number;
+  tatkalFare: number;
 }
 
 interface TBSTrain {
@@ -570,12 +572,12 @@ export default function TrainsBetween({ onViewTrain }: TrainsBetweenProps) {
                             <span
                               key={c.code}
                               className={`text-[10px] font-bold px-2 py-0.5 rounded border ${classColor(c.code)}`}
-                              title={`${c.label}${c.totalSeats > 0 ? ` · ${c.totalSeats} seats` : ""}`}
+                              title={`${c.label}${c.estimatedFare > 0 ? ` · Approx ₹${c.estimatedFare}` : ""}${c.totalSeats > 0 ? ` · ${c.totalSeats} seats` : ""}`}
                             >
                               {c.code}
-                              {c.totalSeats > 0 && (
-                                <span className="ml-1 opacity-70 font-normal">
-                                  {c.totalSeats}
+                              {c.estimatedFare > 0 && (
+                                <span className="ml-1 opacity-80 font-normal">
+                                  ₹{c.estimatedFare}
                                 </span>
                               )}
                             </span>
@@ -612,19 +614,19 @@ export default function TrainsBetween({ onViewTrain }: TrainsBetweenProps) {
                                     Class
                                   </th>
                                   <th className="text-right py-1 px-2 font-normal">
+                                    Fare
+                                  </th>
+                                  <th className="text-right py-1 px-2 font-normal">
+                                    Tatkal
+                                  </th>
+                                  <th className="text-right py-1 px-2 font-normal">
                                     Total
                                   </th>
                                   <th className="text-right py-1 px-2 font-normal">
                                     General
                                   </th>
-                                  <th className="text-right py-1 px-2 font-normal">
-                                    Ladies
-                                  </th>
-                                  <th className="text-right py-1 px-2 font-normal">
-                                    Tatkal
-                                  </th>
                                   <th className="text-right py-1 pl-2 font-normal">
-                                    Prem Tkl
+                                    Ladies
                                   </th>
                                 </tr>
                               </thead>
@@ -644,20 +646,20 @@ export default function TrainsBetween({ onViewTrain }: TrainsBetweenProps) {
                                         {c.label}
                                       </span>
                                     </td>
-                                    <td className="text-right py-1.5 px-2 font-semibold text-slate-800 dark:text-slate-100">
+                                    <td className="text-right py-1.5 px-2 font-bold text-slate-800 dark:text-slate-100">
+                                      {c.estimatedFare > 0 ? `₹${c.estimatedFare}` : "—"}
+                                    </td>
+                                    <td className="text-right py-1.5 px-2 text-amber-600 dark:text-amber-400">
+                                      {c.tatkalFare > 0 ? `₹${c.tatkalFare}` : "—"}
+                                    </td>
+                                    <td className="text-right py-1.5 px-2 text-slate-600 dark:text-slate-300">
                                       {c.totalSeats || "—"}
                                     </td>
                                     <td className="text-right py-1.5 px-2 text-slate-600 dark:text-slate-300">
                                       {c.generalQuota || "—"}
                                     </td>
-                                    <td className="text-right py-1.5 px-2 text-slate-600 dark:text-slate-300">
-                                      {c.ladiesQuota || "—"}
-                                    </td>
-                                    <td className="text-right py-1.5 px-2 text-slate-600 dark:text-slate-300">
-                                      {c.tatkalQuota || "—"}
-                                    </td>
                                     <td className="text-right py-1.5 pl-2 text-slate-600 dark:text-slate-300">
-                                      {c.premiumTatkalQuota || "—"}
+                                      {c.ladiesQuota || "—"}
                                     </td>
                                   </tr>
                                 ))}
@@ -665,8 +667,9 @@ export default function TrainsBetween({ onViewTrain }: TrainsBetweenProps) {
                             </table>
                           </div>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">
-                            Coach composition. For live seat availability on a
-                            specific date, check IRCTC or confirmtkt.
+                            Fares are approximate IR tariffs — dynamic pricing
+                            on Rajdhani/Shatabdi/Vande Bharat may differ. For
+                            live seat availability and actual fare, check IRCTC.
                           </p>
                         </div>
                       )}

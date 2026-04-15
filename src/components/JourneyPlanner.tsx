@@ -3,6 +3,20 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { stationCoordinates } from "@/data/stations";
 
+interface ClassInfo {
+  code: string;
+  label: string;
+  estimatedFare: number;
+  tatkalFare: number;
+  totalSeats: number;
+}
+
+interface ConnectingFareSummary {
+  classCode: string;
+  label: string;
+  total: number;
+}
+
 interface JourneyLeg {
   trainNo: string;
   trainName: string;
@@ -23,6 +37,7 @@ interface JourneyLeg {
     Fri: boolean;
     Sat: boolean;
   };
+  classes: ClassInfo[];
 }
 
 interface ConnectingJourney {
@@ -32,6 +47,7 @@ interface ConnectingJourney {
   layoverMinutes: number;
   totalMinutes: number;
   totalHours: string;
+  combinedFares: ConnectingFareSummary[];
 }
 
 interface JourneyData {
@@ -372,52 +388,75 @@ export default function JourneyPlanner({ onViewTrain }: JourneyPlannerProps) {
                 {data.directTrains.slice(0, 5).map((t) => (
                   <div
                     key={t.trainNo}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
-                    <div className="text-center w-14 flex-shrink-0">
-                      <div className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                        {t.departureTime}
+                    <div className="flex items-center gap-3">
+                      <div className="text-center w-14 flex-shrink-0">
+                        <div className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">
+                          {t.departureTime}
+                        </div>
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">
+                          {t.from}
+                        </div>
                       </div>
-                      <div className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">
-                        {t.from}
+                      <div className="flex-1 flex flex-col items-center">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                          {formatDuration(t.durationMinutes)}
+                        </div>
+                        <div className="relative w-full h-px bg-slate-300 dark:bg-slate-700 my-1">
+                          <div className="absolute -top-1 left-0 w-2 h-2 rounded-full bg-green-500" />
+                          <div className="absolute -top-1 right-0 w-2 h-2 rounded-full bg-red-500" />
+                        </div>
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                          {t.distance}
+                        </div>
                       </div>
+                      <div className="text-center w-14 flex-shrink-0">
+                        <div className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">
+                          {t.arrivalTime}
+                        </div>
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">
+                          {t.to}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 ml-2 min-w-0">
+                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate max-w-[180px]">
+                          {t.trainName}
+                        </div>
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                          #{t.trainNo}
+                        </div>
+                      </div>
+                      {onViewTrain && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => onViewTrain(t.trainNo, "route")}
+                            className="px-2 py-1 text-[10px] font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                          >
+                            Route
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-1 flex flex-col items-center">
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                        {formatDuration(t.durationMinutes)}
-                      </div>
-                      <div className="relative w-full h-px bg-slate-300 dark:bg-slate-700 my-1">
-                        <div className="absolute -top-1 left-0 w-2 h-2 rounded-full bg-green-500" />
-                        <div className="absolute -top-1 right-0 w-2 h-2 rounded-full bg-red-500" />
-                      </div>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                        {t.distance}
-                      </div>
-                    </div>
-                    <div className="text-center w-14 flex-shrink-0">
-                      <div className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                        {t.arrivalTime}
-                      </div>
-                      <div className="text-[9px] text-slate-400 dark:text-slate-500 uppercase">
-                        {t.to}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 ml-2 min-w-0">
-                      <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate max-w-[180px]">
-                        {t.trainName}
-                      </div>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                        #{t.trainNo}
-                      </div>
-                    </div>
-                    {onViewTrain && (
-                      <div className="flex gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => onViewTrain(t.trainNo, "route")}
-                          className="px-2 py-1 text-[10px] font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                        >
-                          Route
-                        </button>
+                    {/* Fare row */}
+                    {t.classes && t.classes.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700/50 flex flex-wrap gap-2">
+                        {t.classes
+                          .filter((c) => c.estimatedFare > 0)
+                          .map((c) => (
+                            <span
+                              key={c.code}
+                              className="text-[10px] px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                              title={c.label}
+                            >
+                              <span className="font-bold text-slate-600 dark:text-slate-300">
+                                {c.code}
+                              </span>{" "}
+                              <span className="text-slate-800 dark:text-slate-100 font-semibold">
+                                ₹{c.estimatedFare}
+                              </span>
+                            </span>
+                          ))}
                       </div>
                     )}
                   </div>
@@ -553,6 +592,30 @@ export default function JourneyPlanner({ onViewTrain }: JourneyPlannerProps) {
                         </div>
                       ))}
                     </div>
+                    {/* Combined fares */}
+                    {j.combinedFares && j.combinedFares.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/50">
+                        <div className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-1.5">
+                          Approx. total fare (both legs)
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {j.combinedFares.map((f) => (
+                            <span
+                              key={f.classCode}
+                              className="text-[10px] px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                              title={f.label}
+                            >
+                              <span className="font-bold text-slate-600 dark:text-slate-300">
+                                {f.classCode}
+                              </span>{" "}
+                              <span className="text-slate-800 dark:text-slate-100 font-semibold">
+                                ₹{f.total}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
