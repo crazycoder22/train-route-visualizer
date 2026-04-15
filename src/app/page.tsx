@@ -6,6 +6,7 @@ import type { TrainMapHandle } from "@/components/TrainMap";
 import LiveStatus from "@/components/LiveStatus";
 import PnrStatus from "@/components/PnrStatus";
 import StationSearch from "@/components/StationSearch";
+import TrainsBetween from "@/components/TrainsBetween";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 
@@ -19,7 +20,7 @@ const TrainMap = dynamic(() => import("@/components/TrainMap"), {
   ),
 });
 
-type TabType = "route" | "live" | "pnr" | "station";
+type TabType = "route" | "live" | "pnr" | "station" | "tbs";
 
 interface Station {
   serialNo: number;
@@ -264,6 +265,20 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setActiveTab(activeTab === "tbs" ? "route" : "tbs")}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "tbs"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
+              title="Trains Between Stations"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              <span className="hidden md:inline">Trains</span>
+            </button>
+            <button
               onClick={() => setActiveTab(activeTab === "station" ? "route" : "station")}
               className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === "station"
@@ -275,7 +290,7 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="hidden sm:inline">Station</span>
+              <span className="hidden md:inline">Station</span>
             </button>
             <button
               onClick={() => setActiveTab(activeTab === "pnr" ? "route" : "pnr")}
@@ -288,7 +303,7 @@ export default function Home() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
               </svg>
-              <span className="hidden sm:inline">PNR</span>
+              <span className="hidden md:inline">PNR</span>
             </button>
             <ThemeToggle />
           </div>
@@ -318,8 +333,19 @@ export default function Home() {
           />
         )}
 
+        {/* Trains Between Stations Mode */}
+        {activeTab === "tbs" && (
+          <TrainsBetween
+            onViewTrain={(trainNoFromTbs, tab) => {
+              setTrainNo(trainNoFromTbs);
+              setActiveTab(tab);
+              fetchTrain(trainNoFromTbs);
+            }}
+          />
+        )}
+
         {/* Train Route Mode */}
-        {activeTab !== "pnr" && activeTab !== "station" && (
+        {activeTab !== "pnr" && activeTab !== "station" && activeTab !== "tbs" && (
         <>
         {/* Search Section */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-6">
