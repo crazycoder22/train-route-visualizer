@@ -183,10 +183,11 @@ const TrainMap = forwardRef<TrainMapHandle, TrainMapProps>(
         const key = `${station.stationCode}-${originalIndex}`;
         markersRef.current.set(key, marker);
 
-        // Popup content with weather placeholder
+        // Popup content with weather + amenities placeholders
         const weatherId = `weather-${station.stationCode}-${idx}`;
+        const amenitiesId = `amenities-${station.stationCode}-${idx}`;
         const popupContent = `
-          <div style="font-family: system-ui; min-width: 200px;">
+          <div style="font-family: system-ui; min-width: 220px; max-width: 280px;">
             <div style="font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 4px;">
               ${station.stationName}
             </div>
@@ -202,44 +203,112 @@ const TrainMap = forwardRef<TrainMapHandle, TrainMapProps>(
             <div id="${weatherId}" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
               Loading weather...
             </div>
+            <div id="${amenitiesId}" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+              Loading nearby amenities...
+            </div>
             <div style="margin-top: 4px; font-size: 11px; color: #94a3b8;">
               Stop #${station.serialNo}
             </div>
           </div>
         `;
-        marker.bindPopup(popupContent);
+        marker.bindPopup(popupContent, { maxWidth: 320 });
 
-        // Fetch weather when popup opens
+        // Fetch weather + amenities when popup opens
         marker.on("popupopen", () => {
-          const el = document.getElementById(weatherId);
-          if (!el || el.dataset.loaded === "true") return;
-          el.dataset.loaded = "true";
-
-          fetch(`/api/weather?lat=${station.lat}&lng=${station.lng}`)
-            .then((r) => r.json())
-            .then((w) => {
-              if (w.error) {
-                el.textContent = "Weather unavailable";
-                return;
-              }
-              el.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 20px; line-height: 1;">${w.icon}</span>
-                  <div>
-                    <div style="font-weight: 600; color: #1e293b; font-size: 13px;">
-                      ${w.temperature}°C
-                      <span style="font-weight: 400; color: #64748b; font-size: 11px;">feels ${w.feelsLike}°C</span>
-                    </div>
-                    <div style="color: #64748b; font-size: 11px;">
-                      ${w.description} &middot; 💧${w.humidity}% &middot; 💨${w.windSpeed} km/h
+          // Weather
+          const wEl = document.getElementById(weatherId);
+          if (wEl && wEl.dataset.loaded !== "true") {
+            wEl.dataset.loaded = "true";
+            fetch(`/api/weather?lat=${station.lat}&lng=${station.lng}`)
+              .then((r) => r.json())
+              .then((w) => {
+                if (w.error) {
+                  wEl.textContent = "Weather unavailable";
+                  return;
+                }
+                wEl.innerHTML = `
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 20px; line-height: 1;">${w.icon}</span>
+                    <div>
+                      <div style="font-weight: 600; color: #1e293b; font-size: 13px;">
+                        ${w.temperature}°C
+                        <span style="font-weight: 400; color: #64748b; font-size: 11px;">feels ${w.feelsLike}°C</span>
+                      </div>
+                      <div style="color: #64748b; font-size: 11px;">
+                        ${w.description} &middot; 💧${w.humidity}% &middot; 💨${w.windSpeed} km/h
+                      </div>
                     </div>
                   </div>
-                </div>
-              `;
-            })
-            .catch(() => {
-              el.textContent = "Weather unavailable";
-            });
+                `;
+              })
+              .catch(() => {
+                wEl.textContent = "Weather unavailable";
+              });
+          }
+
+          // Amenities
+          const aEl = document.getElementById(amenitiesId);
+          if (aEl && aEl.dataset.loaded !== "true") {
+            aEl.dataset.loaded = "true";
+            fetch(`/api/amenities?lat=${station.lat}&lng=${station.lng}&radius=500`)
+              .then((r) => r.json())
+              .then((a) => {
+                if (a.error || !a.amenities || a.amenities.length === 0) {
+                  aEl.innerHTML = `<span style="color: #94a3b8; font-size: 11px;">🏪 No amenities found nearby</span>`;
+                  return;
+                }
+                // Group by category
+                const groups: Record<string, number> = {};
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                a.amenities.forEach((item: any) => {
+                  groups[item.category] = (groups[item.category] || 0) + 1;
+                });
+                const catIcons: Record<string, string> = {
+                  food: "🍽️",
+                  atm: "🏧",
+                  toilets: "🚻",
+                  pharmacy: "💊",
+                  shop: "🛒",
+                  waiting: "🪑",
+                  other: "📍",
+                };
+                const catLabels: Record<string, string> = {
+                  food: "Food",
+                  atm: "ATM/Bank",
+                  toilets: "Toilets",
+                  pharmacy: "Pharmacy",
+                  shop: "Shop",
+                  waiting: "Waiting",
+                  other: "Other",
+                };
+                // Summary pills
+                const summary = Object.entries(groups)
+                  .map(
+                    ([cat, count]) =>
+                      `<span style="display: inline-flex; align-items: center; gap: 2px; background: #f1f5f9; padding: 2px 6px; border-radius: 999px; font-size: 10px; color: #475569; margin-right: 4px; margin-bottom: 2px;">${catIcons[cat] || "📍"} <strong>${count}</strong> ${catLabels[cat] || cat}</span>`
+                  )
+                  .join("");
+                // Top 5 nearest
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const top = a.amenities.slice(0, 5).map((item: any) => {
+                  const icon = catIcons[item.category] || "📍";
+                  const name = item.name.length > 28 ? item.name.slice(0, 28) + "…" : item.name;
+                  return `<div style="font-size: 11px; color: #475569; display: flex; justify-content: space-between; gap: 4px;"><span>${icon} ${name}</span><span style="color: #94a3b8;">${item.distance}m</span></div>`;
+                }).join("");
+                aEl.innerHTML = `
+                  <div style="font-weight: 600; color: #1e293b; font-size: 11px; margin-bottom: 4px;">
+                    Nearby (${a.total} within 500m)
+                  </div>
+                  <div style="margin-bottom: 4px;">${summary}</div>
+                  <div style="margin-top: 4px; border-top: 1px dashed #e2e8f0; padding-top: 4px;">
+                    ${top}
+                  </div>
+                `;
+              })
+              .catch(() => {
+                if (aEl) aEl.textContent = "Amenities unavailable";
+              });
+          }
         });
       });
 
