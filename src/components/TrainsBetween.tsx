@@ -3,6 +3,19 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { stationCoordinates } from "@/data/stations";
 
+interface TBSClassInfo {
+  code: string;
+  label: string;
+  totalSeats: number;
+  generalQuota: number;
+  ladiesQuota: number;
+  tatkalQuota: number;
+  premiumTatkalQuota: number;
+  seniorQuota: number;
+  disabledQuota: number;
+  duressQuota: number;
+}
+
 interface TBSTrain {
   trainNo: string;
   trainName: string;
@@ -26,6 +39,25 @@ interface TBSTrain {
     Sat: boolean;
   };
   daysCount: number;
+  classes: TBSClassInfo[];
+}
+
+const CLASS_COLORS: Record<string, string> = {
+  "1A": "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30",
+  "2A": "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  "3A": "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-500/30",
+  "3E": "bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-500/30",
+  SL: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30",
+  "2S": "bg-lime-500/20 text-lime-700 dark:text-lime-300 border-lime-500/30",
+  CC: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  EC: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30",
+};
+
+function classColor(code: string): string {
+  return (
+    CLASS_COLORS[code] ||
+    "bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/30"
+  );
 }
 
 interface TBSData {
@@ -187,6 +219,7 @@ export default function TrainsBetween({ onViewTrain }: TrainsBetweenProps) {
   const [sortBy, setSortBy] = useState<SortField>("departure");
   const [filterDay, setFilterDay] = useState<string | null>(null);
   const [filterText, setFilterText] = useState("");
+  const [expandedTrainNo, setExpandedTrainNo] = useState<string | null>(null);
 
   const fetchTrains = async (src: string, dst: string) => {
     if (!src || !dst) return;
@@ -520,6 +553,125 @@ export default function TrainsBetween({ onViewTrain }: TrainsBetweenProps) {
                       ))}
                     </div>
                   </div>
+
+                  {/* Classes row + expand toggle */}
+                  {t.classes && t.classes.length > 0 && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() =>
+                          setExpandedTrainNo(
+                            expandedTrainNo === t.trainNo ? null : t.trainNo
+                          )
+                        }
+                        className="w-full flex items-center justify-between gap-2 text-left"
+                      >
+                        <div className="flex flex-wrap gap-1">
+                          {t.classes.map((c) => (
+                            <span
+                              key={c.code}
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded border ${classColor(c.code)}`}
+                              title={`${c.label}${c.totalSeats > 0 ? ` · ${c.totalSeats} seats` : ""}`}
+                            >
+                              {c.code}
+                              {c.totalSeats > 0 && (
+                                <span className="ml-1 opacity-70 font-normal">
+                                  {c.totalSeats}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                        <svg
+                          className={`w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0 transition-transform ${
+                            expandedTrainNo === t.trainNo ? "rotate-180" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+
+                      {/* Expanded class details */}
+                      {expandedTrainNo === t.trainNo && (
+                        <div className="mt-2 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                          <div className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-2">
+                            Seat Composition by Class
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">
+                                  <th className="text-left py-1 pr-2 font-normal">
+                                    Class
+                                  </th>
+                                  <th className="text-right py-1 px-2 font-normal">
+                                    Total
+                                  </th>
+                                  <th className="text-right py-1 px-2 font-normal">
+                                    General
+                                  </th>
+                                  <th className="text-right py-1 px-2 font-normal">
+                                    Ladies
+                                  </th>
+                                  <th className="text-right py-1 px-2 font-normal">
+                                    Tatkal
+                                  </th>
+                                  <th className="text-right py-1 pl-2 font-normal">
+                                    Prem Tkl
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {t.classes.map((c) => (
+                                  <tr
+                                    key={c.code}
+                                    className="border-t border-slate-100 dark:border-slate-800"
+                                  >
+                                    <td className="py-1.5 pr-2">
+                                      <span
+                                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${classColor(c.code)}`}
+                                      >
+                                        {c.code}
+                                      </span>{" "}
+                                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        {c.label}
+                                      </span>
+                                    </td>
+                                    <td className="text-right py-1.5 px-2 font-semibold text-slate-800 dark:text-slate-100">
+                                      {c.totalSeats || "—"}
+                                    </td>
+                                    <td className="text-right py-1.5 px-2 text-slate-600 dark:text-slate-300">
+                                      {c.generalQuota || "—"}
+                                    </td>
+                                    <td className="text-right py-1.5 px-2 text-slate-600 dark:text-slate-300">
+                                      {c.ladiesQuota || "—"}
+                                    </td>
+                                    <td className="text-right py-1.5 px-2 text-slate-600 dark:text-slate-300">
+                                      {c.tatkalQuota || "—"}
+                                    </td>
+                                    <td className="text-right py-1.5 pl-2 text-slate-600 dark:text-slate-300">
+                                      {c.premiumTatkalQuota || "—"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">
+                            Coach composition. For live seat availability on a
+                            specific date, check IRCTC or confirmtkt.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}
