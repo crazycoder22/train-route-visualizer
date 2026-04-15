@@ -7,6 +7,7 @@ import LiveStatus from "@/components/LiveStatus";
 import PnrStatus from "@/components/PnrStatus";
 import StationSearch from "@/components/StationSearch";
 import TrainsBetween from "@/components/TrainsBetween";
+import JourneyPlanner from "@/components/JourneyPlanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 
@@ -20,7 +21,7 @@ const TrainMap = dynamic(() => import("@/components/TrainMap"), {
   ),
 });
 
-type TabType = "route" | "live" | "pnr" | "station" | "tbs";
+type TabType = "route" | "live" | "pnr" | "station" | "tbs" | "journey";
 
 interface Station {
   serialNo: number;
@@ -265,6 +266,20 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setActiveTab(activeTab === "journey" ? "route" : "journey")}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "journey"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
+              title="Journey Planner"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span className="hidden md:inline">Journey</span>
+            </button>
+            <button
               onClick={() => setActiveTab(activeTab === "tbs" ? "route" : "tbs")}
               className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === "tbs"
@@ -344,8 +359,19 @@ export default function Home() {
           />
         )}
 
+        {/* Journey Planner Mode */}
+        {activeTab === "journey" && (
+          <JourneyPlanner
+            onViewTrain={(trainNoFromJourney, tab) => {
+              setTrainNo(trainNoFromJourney);
+              setActiveTab(tab);
+              fetchTrain(trainNoFromJourney);
+            }}
+          />
+        )}
+
         {/* Train Route Mode */}
-        {activeTab !== "pnr" && activeTab !== "station" && activeTab !== "tbs" && (
+        {activeTab !== "pnr" && activeTab !== "station" && activeTab !== "tbs" && activeTab !== "journey" && (
         <>
         {/* Search Section */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-6">
