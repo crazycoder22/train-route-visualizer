@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { TrainMapHandle } from "@/components/TrainMap";
 import LiveStatus from "@/components/LiveStatus";
@@ -10,6 +10,7 @@ import TrainsBetween from "@/components/TrainsBetween";
 import JourneyPlanner from "@/components/JourneyPlanner";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
+import ShareButton from "@/components/ShareButton";
 
 // Dynamically import map to avoid SSR issues with Leaflet
 const TrainMap = dynamic(() => import("@/components/TrainMap"), {
@@ -139,6 +140,10 @@ export default function Home() {
         setError(data.error);
       } else {
         setTrainData(data);
+        // Update URL with train number for shareability
+        const url = new URL(window.location.href);
+        url.searchParams.set("train", cleaned);
+        window.history.replaceState({}, "", url.toString());
       }
     } catch {
       setError("Failed to fetch train data. Please check your connection.");
@@ -146,6 +151,16 @@ export default function Home() {
       setLoading(false);
     }
   }, []);
+
+  // Auto-load train from URL param on first render
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const trainParam = params.get("train");
+    if (trainParam) {
+      setTrainNo(trainParam);
+      fetchTrain(trainParam);
+    }
+  }, [fetchTrain]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -506,6 +521,12 @@ export default function Home() {
                         End
                       </span>
                     </div>
+                    <ShareButton
+                      trainNo={trainData.trainNo}
+                      trainName={trainData.trainName}
+                      states={trainData.states}
+                      targetRef={routeContentRef}
+                    />
                     <ExportButton
                       targetRef={routeContentRef}
                       filename={`train-${trainData.trainNo}-route`}
